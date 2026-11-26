@@ -3,637 +3,765 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ISO / ASME Standard UT Simulator & Hardware-in-the-Loop Workstation</title>
+  <title>UT-2026 Industrial Flaw Detector & HIL Simulator</title>
   <style>
     :root {
-      --bg-app: #0b1120;
-      --bg-panel: #131c31;
-      --bg-card: #0f172a;
-      --border: #28354f;
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-dark: #0284c7;
-      --trace: #22c55e;
-      --gate: #ef4444;
-      --dac: #f59e0b;
-      --pass: #10b981;
+      --bg-chassis: #090c10;
+      --bg-panel: #10151e;
+      --bg-elevated: #161d29;
+      --border-hairline: #232d3f;
+      --border-active: #38bdf8;
+      --text-primary: #f1f5f9;
+      --text-secondary: #8b9bb4;
+      --text-muted: #56657d;
+      --accent-cyan: #0ea5e9;
+      --phosphor-green: #10b981;
+      --dac-amber: #f59e0b;
+      --gate-red: #ef4444;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Courier New", monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-app);
-      color: var(--text-main);
-      padding: 12px;
+      font-family: var(--font-sans);
+      background-color: var(--bg-chassis);
+      color: var(--text-primary);
+      padding: 10px;
       display: flex;
       justify-content: center;
+      min-height: 100vh;
     }
 
-    .app-shell {
+    .instrument-chassis {
       width: 100%;
-      max-width: 1400px;
+      max-width: 1420px;
       background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
     }
 
-    .top-bar {
+    /* 1. TOP INSTRUMENT HEADER BAR */
+    .top-header {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
-      padding-bottom: 12px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-hairline);
     }
 
-    .brand h1 {
-      font-size: 1.15rem;
+    .model-badge {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .brand span.badge {
-      background: #0284c7;
-      color: #fff;
-      font-size: 0.68rem;
-      padding: 2px 7px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .brand p {
-      font-size: 0.79rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .workspace-tabs {
-      display: flex;
-      background: var(--bg-app);
-      padding: 4px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      gap: 4px;
-    }
-
-    .ws-tab {
-      background: transparent;
-      color: var(--text-muted);
-      border: none;
-      padding: 7px 14px;
-      border-radius: 6px;
-      font-size: 0.84rem;
+    .model-tag {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hairline);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
       font-weight: 700;
-      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
     }
 
-    .ws-tab.active {
-      background: var(--accent-dark);
-      color: #fff;
+    .model-title h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      color: var(--text-primary);
     }
 
-    .quick-tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+    .model-title span {
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
     }
 
-    button.btn {
-      background: var(--accent-dark);
-      color: #fff;
-      border: none;
-      padding: 7px 10px;
+    /* Mode Switcher (Minimalist Segmented Control) */
+    .mode-switch {
+      display: inline-flex;
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-hairline);
       border-radius: 6px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
       font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
 
-    button.btn:hover { background: #0369a1; }
-    button.btn.sec { background: #26334d; color: #e2e8f0; }
-    button.btn.sec:hover { background: #334466; }
-    button.btn.sec.active-toggle { background: #0f766e; color: #fff; }
-    button.btn.hw-btn { background: #7c3aed; }
-    button.btn.hw-btn:hover { background: #6d28d9; }
-    button.btn.hw-btn.connected { background: #059669; }
-    button.btn.warn { background: #b45309; }
-    button.btn.pass { background: #047857; }
+    .mode-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: inset 0 0 0 1px var(--border-active);
+    }
 
-    .exp-ribbon {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--accent);
-      border-radius: 8px;
-      padding: 9px 14px;
-      margin-bottom: 12px;
+    /* Hardware & Quick Soft-Keys */
+    .soft-keys {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .s-btn {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-hairline);
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .s-btn:hover {
+      border-color: var(--text-secondary);
+      background: #1d2636;
+    }
+
+    .s-btn.active {
+      background: rgba(14, 165, 233, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .s-btn.hw-connect {
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    .s-btn.hw-connect.online {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--phosphor-green);
+      color: var(--phosphor-green);
+    }
+
+    /* Experiment Selector Strip */
+    .exp-strip {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-hairline);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 7px 12px;
+      border-radius: 5px;
+    }
+
+    .exp-strip label {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    select.ind-select {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-hairline);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      outline: none;
+    }
+
+    select.ind-select:focus { border-color: var(--accent-cyan); }
+
+    /* 2. DUAL VIEWPORT (SPECIMEN RAY-TRACER + A-SCAN OSCILLOSCOPE) */
+    .viewport-split {
+      display: grid;
+      grid-template-columns: 1fr 1.32fr;
       gap: 10px;
     }
 
-    select {
-      background: #1e293b;
-      color: var(--text-main);
-      border: 1px solid #475569;
-      border-radius: 5px;
-      padding: 4px 8px;
-      font-size: 0.81rem;
-      cursor: pointer;
+    @media (max-width: 1024px) {
+      .viewport-split { grid-template-columns: 1fr; }
     }
 
-    .viewport-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.3fr;
-      gap: 14px;
-      margin-bottom: 12px;
-    }
-
-    @media (max-width: 1020px) {
-      .viewport-grid { grid-template-columns: 1fr; }
-    }
-
-    .panel-box {
-      background: #030712;
-      border: 1.5px solid #334155;
-      border-radius: 8px;
-      overflow: hidden;
+    .crt-bezel {
+      background: #05070a;
+      border: 1px solid var(--border-hairline);
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    .panel-header {
-      background: #0f172a;
-      border-bottom: 1px solid var(--border);
-      padding: 7px 10px;
+    .bezel-toolbar {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 6px 10px;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       gap: 6px;
-      font-size: 0.79rem;
-      color: var(--text-muted);
+      font-size: 0.76rem;
     }
 
-    .panel-header strong { color: var(--text-main); }
+    .bezel-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
 
-    .telemetry-bar {
+    /* Digital Measurement Readout Strip */
+    .readout-strip {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      background: #070b14;
-      border-bottom: 1px solid #1e293b;
-      padding: 6px 8px;
-      font-family: "Courier New", monospace;
-      text-align: center;
+      background: #080b10;
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 5px 6px;
+      font-family: var(--font-mono);
     }
 
-    .tele-cell span {
+    .r-box {
+      padding: 2px 6px;
+      border-right: 1px solid #18202e;
+    }
+
+    .r-box:last-child { border-right: none; }
+
+    .r-box .lbl {
       display: block;
-      font-size: 0.64rem;
-      color: #64748b;
-      text-transform: uppercase;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
     }
 
-    .tele-cell strong {
+    .r-box .val {
       font-size: 0.86rem;
-      color: var(--accent);
+      font-weight: 700;
+      color: var(--text-primary);
     }
 
-    .tele-cell strong.alarm { color: var(--gate); }
+    .r-box .val.alarm { color: var(--gate-red); }
+    .r-box .val.cyan { color: var(--accent-cyan); }
 
     canvas {
       display: block;
       width: 100%;
-      height: 365px;
+      height: 360px;
     }
 
-    #specimenCanvas {
-      cursor: grab;
-      touch-action: none;
-    }
-
+    #specimenCanvas { cursor: grab; touch-action: none; }
     #specimenCanvas:active { cursor: grabbing; }
 
-    .deck-group-title {
-      font-size: 0.73rem;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: var(--text-muted);
-      font-weight: 700;
-      margin: 8px 0 5px 2px;
+    /* 3. COMPACT INDUSTRIAL CONTROL DECK (TABS + KNOB SLIDERS) */
+    .control-deck {
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-hairline);
+      border-radius: 6px;
+      padding: 10px 12px;
     }
 
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 9px;
+    .deck-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-hairline);
     }
 
-    .ctrl-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 9px 11px;
+    .deck-tabs {
+      display: flex;
+      gap: 6px;
     }
 
-    .ctrl-card.probe-accent { border-left: 3px solid var(--accent); }
-    .ctrl-card.gate-accent { border-left: 3px solid var(--gate); }
-    .ctrl-card.dac-accent { border-left: 3px solid var(--dac); }
+    .d-tab {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-hairline);
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
-    .ctrl-top {
+    .d-tab.active {
+      background: var(--accent-cyan);
+      color: #041019;
+      border-color: var(--accent-cyan);
+    }
+
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+    }
+
+    .param-cell {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      border-radius: 5px;
+      padding: 8px 10px;
+    }
+
+    .param-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
     }
 
-    .ctrl-val {
-      font-family: "Courier New", monospace;
+    .param-readout {
+      font-family: var(--font-mono);
       font-weight: 700;
-      color: var(--accent);
-      font-size: 0.88rem;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
     }
 
-    .ctrl-row {
+    .param-readout.gate { color: var(--gate-red); }
+    .param-readout.dac { color: var(--dac-amber); }
+
+    .slider-bar {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
 
-    button.step {
-      background: #26334d;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-family: monospace;
-      font-size: 0.88rem;
+    .nudge-btn {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-hairline);
+      width: 24px;
+      height: 22px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+
+    .nudge-btn:hover { border-color: var(--accent-cyan); }
 
     input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
       flex: 1;
-      accent-color: var(--accent);
+      height: 4px;
+      background: #232d3f;
+      border-radius: 2px;
+      outline: none;
       cursor: pointer;
     }
 
-    .gate-accent input[type="range"] { accent-color: var(--gate); }
-    .dac-accent input[type="range"] { accent-color: var(--dac); }
-
-    .lab-sheet {
-      margin-top: 12px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 13px;
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      background: var(--accent-cyan);
+      cursor: pointer;
     }
 
-    .lab-grid {
+    .gate-slider::-webkit-slider-thumb { background: var(--gate-red) !important; }
+    .dac-slider::-webkit-slider-thumb { background: var(--dac-amber) !important; }
+
+    /* 4. LABORATORY EXPERIMENT WORKSHEET */
+    .lab-panel {
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-hairline);
+      border-radius: 6px;
+      padding: 12px;
       display: grid;
       grid-template-columns: 1fr 1.35fr;
       gap: 14px;
     }
 
     @media (max-width: 960px) {
-      .lab-grid { grid-template-columns: 1fr; }
+      .lab-panel { grid-template-columns: 1fr; }
     }
 
-    .lab-instructions h3 {
-      font-size: 0.95rem;
-      color: var(--accent);
+    .lab-guide h3 {
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
       margin-bottom: 6px;
+      font-family: var(--font-mono);
     }
 
-    .lab-instructions li {
-      font-size: 0.82rem;
-      color: #cbd5e1;
-      line-height: 1.48;
-      margin-bottom: 4px;
+    .lab-guide ol {
+      padding-left: 18px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
     }
 
-    .lab-instructions ol { padding-left: 18px; }
+    .lab-guide li { margin-bottom: 4px; }
+    .lab-guide strong { color: var(--text-primary); }
 
-    table.data-table {
+    table.ind-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.79rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
       margin-top: 6px;
     }
 
-    table.data-table th, table.data-table td {
-      border: 1px solid #334155;
-      padding: 5px 7px;
+    table.ind-table th, table.ind-table td {
+      border: 1px solid var(--border-hairline);
+      padding: 5px 6px;
       text-align: center;
     }
 
-    table.data-table th { background: #1e293b; color: #f8fafc; }
+    table.ind-table th {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
 
-    table.data-table input {
+    table.ind-table input {
       width: 66px;
-      background: #0b1120;
-      color: #38bdf8;
-      border: 1px solid #475569;
-      border-radius: 4px;
+      background: var(--bg-panel);
+      color: var(--accent-cyan);
+      border: 1px solid var(--border-hairline);
+      border-radius: 3px;
       padding: 2px 4px;
       text-align: center;
-      font-family: monospace;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
     }
 
-    .status-banner {
-      margin-top: 10px;
-      background: #090e1a;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 9px 12px;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.45;
+    .status-footer {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-chassis);
+      border: 1px solid var(--border-hairline);
+      border-radius: 4px;
+      padding: 7px 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .status-pass { color: var(--pass); font-weight: 700; }
-    .status-warn { color: var(--dac); font-weight: 700; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <!-- Top Bar -->
-    <div class="top-bar">
-      <div class="brand">
-        <h1>ISO / ASME Standard UT Workstation <span class="badge">HIL Ready</span></h1>
-        <p>ISO 2400 (V1) • ISO 7963 (V2) • ASME Sec. V Art. 4 • Nuklear Malaysia Level 2 Practicals</p>
+  <div class="instrument-chassis">
+    <!-- TOP BAR -->
+    <header class="top-header">
+      <div class="model-badge">
+        <span class="model-tag">UT-2026</span>
+        <div class="model-title">
+          <h1>Ultrasonic Flaw Detector & Acoustic Ray-Tracer</h1>
+          <span>ISO 2400 (V1) • ISO 7963 (V2) • ASME SEC. V ART. 4</span>
+        </div>
       </div>
 
-      <div class="workspace-tabs">
-        <button class="ws-tab active" data-workspace="general">UT Simulator</button>
-        <button class="ws-tab" data-workspace="experiment">UT Practical Experiment</button>
+      <div class="mode-switch">
+        <button class="mode-btn active" data-workspace="general">UT Simulator</button>
+        <button class="mode-btn" data-workspace="experiment">UT Practical Experiment</button>
       </div>
 
-      <div class="quick-tools">
-        <button class="btn hw-btn" id="btnConnectHW" title="Connect USB Arduino/ESP32 Probe via Web Serial">Connect USB Probe</button>
-        <button class="btn sec" id="btnAuto80">Set 80% FSH</button>
-        <button class="btn sec" id="btnMinus6dB">-6 dB</button>
-        <button class="btn sec" id="btnPlus6dB">+6 dB</button>
-        <button class="btn sec" id="btnPeakHold">Peak Env: OFF</button>
-        <button class="btn sec" id="btnFreeze">Freeze</button>
-        <button class="btn sec" id="btnNewSample">Randomize Flaw</button>
+      <div class="soft-keys">
+        <button class="s-btn hw-connect" id="btnConnectHW">USB PROBE</button>
+        <button class="s-btn" id="btnAuto80">AUTO 80%</button>
+        <button class="s-btn" id="btnMinus6dB">-6 dB</button>
+        <button class="s-btn" id="btnPlus6dB">+6 dB</button>
+        <button class="s-btn" id="btnPeakHold">ENV: OFF</button>
+        <button class="s-btn" id="btnFreeze">FREEZE</button>
+        <button class="s-btn" id="btnNewSample">NEW FLAW</button>
       </div>
-    </div>
+    </header>
 
-    <!-- Practical Experiment Ribbon -->
-    <div class="exp-ribbon hidden" id="experimentRibbon">
+    <!-- EXPERIMENT SELECTOR STRIP -->
+    <div class="exp-strip hidden" id="experimentRibbon">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <label for="selectExperiment" style="font-size:0.8rem;font-weight:700;color:var(--accent);">EXPERIMENT:</label>
-        <select id="selectExperiment">
-          <option value="1">Exp 1: Time-Base Calibration of Longitudinal Waves (ISO 2400 V1)</option>
-          <option value="2">Exp 2: Linearity and Resolution of Ultrasonic Flaw Detector (ISO 2400 V1)</option>
-          <option value="3">Exp 3: Determination of Probe Index and Probe Angle (ISO 2400 V1 & ISO 7963 V2)</option>
-          <option value="4">Exp 4: Time-Base Calibration of Transverse Waves up to 200 mm (V1 & V2)</option>
-          <option value="5">Exp 5: Vertical Beam-Profile Plotting of a Transverse-Wave Probe (I.O.W. Block)</option>
-          <option value="6">Exp 6: Construction of a DAC Curve (ASME Sec. V Basic Calibration Block)</option>
-          <option value="7">Exp 7: Determination of Defect Length with Angle-Beam Probes (6 dB / 20 dB Drop)</option>
-          <option value="8">Exp 8: Determination of Defect Depth with Angle-Beam Probes (1st & 2nd Leg)</option>
-          <option value="9">Exp 9: Determination of Transfer Loss with Angle-Beam Probes (V & W Paths)</option>
-          <option value="10">Exp 10: Determination of Flaw Height Using the 20 dB Drop Method</option>
-          <option value="11">Exp 11: Ultrasonic Inspection of a Welded Sample (Full Weld Scan & Log)</option>
+        <label for="selectExperiment">LAB MODULE:</label>
+        <select class="ind-select" id="selectExperiment">
+          <option value="1">EXP 01 — Time-Base Calibration of Longitudinal Waves (ISO 2400 V1)</option>
+          <option value="2">EXP 02 — Linearity & Axial Resolution Check (ISO 2400 V1)</option>
+          <option value="3">EXP 03 — Probe Index & Refracted Angle Verification (V1 & V2)</option>
+          <option value="4">EXP 04 — Shear-Wave Time-Base Calibration up to 200 mm (V1 & V2)</option>
+          <option value="5">EXP 05 — Vertical Beam-Profile Plotting (-20 dB Spread, I.O.W. Block)</option>
+          <option value="6">EXP 06 — Construction of DAC Curve (ASME Sec. V Basic Block)</option>
+          <option value="7">EXP 07 — Defect Length Sizing (6 dB & 20 dB Drop Methods)</option>
+          <option value="8">EXP 08 — Defect Depth Measurement (1st & 2nd Leg Trigonometry)</option>
+          <option value="9">EXP 09 — Transfer Loss Determination (V-Path & W-Path Skips)</option>
+          <option value="10">EXP 10 — Flaw Through-Wall Height (20 dB Drop Method)</option>
+          <option value="11">EXP 11 — Full Ultrasonic Inspection of Butt-Welded Sample</option>
         </select>
       </div>
-      <button class="btn pass" id="btnAutoRange">Auto-Calibrate Range</button>
+      <button class="s-btn active" id="btnAutoRange">AUTO-CAL ZERO & VEL</button>
     </div>
 
-    <!-- Dual Viewport -->
-    <div class="viewport-grid">
-      <!-- Left: Standard Block / Test Piece Canvas -->
-      <div class="panel-box">
-        <div class="panel-header">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <strong>Standard Block:</strong>
-            <select id="selectBlock">
-              <option value="v1">IIW Type 1 (V1) — ISO 2400</option>
-              <option value="v2" selected>IIW Type 2 (V2) — ISO 7963</option>
-              <option value="asme">ASME Basic Block — Sec. V T-434.2</option>
-              <option value="iow">I.O.W. Beam Profile Block</option>
-              <option value="weld">Butt-Welded Plate (Variable T)</option>
+    <!-- DUAL INSTRUMENT VIEWPORT -->
+    <div class="viewport-split">
+      <!-- LEFT: 2D SPECIMEN & BEAM RAY-TRACER -->
+      <div class="crt-bezel">
+        <div class="bezel-toolbar">
+          <div class="bezel-group">
+            <select class="ind-select" id="selectBlock">
+              <option value="v1">IIW V1 Block (ISO 2400)</option>
+              <option value="v2" selected>IIW V2 Block (ISO 7963)</option>
+              <option value="asme">ASME Basic Block (Sec. V)</option>
+              <option value="iow">I.O.W. Beam Block</option>
+              <option value="weld">Butt-Welded Plate</option>
+            </select>
+            <select class="ind-select" id="selectProbe">
+              <option value="0">0° Long. (5920 m/s)</option>
+              <option value="45">45° Shear (3255 m/s)</option>
+              <option value="60" selected>60° Shear (3255 m/s)</option>
+              <option value="70">70° Shear (3255 m/s)</option>
             </select>
           </div>
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <select id="selectProbe">
-              <option value="0">0° Normal (Long.)</option>
-              <option value="45">45° Shear (Trans.)</option>
-              <option value="60" selected>60° Shear (Trans.)</option>
-              <option value="70">70° Shear (Trans.)</option>
-            </select>
-            <select id="selectSubOpt"></select>
-            <button class="btn sec hidden" id="btnRevealDefect" style="padding:3px 7px;font-size:0.74rem;">Reveal Flaw</button>
+          <div class="bezel-group">
+            <select class="ind-select" id="selectSubOpt"></select>
+            <button class="s-btn hidden" id="btnRevealDefect" style="padding:3px 7px;">SHOW FLAW</button>
           </div>
         </div>
         <canvas id="specimenCanvas"></canvas>
       </div>
 
-      <!-- Right: 10-Division Flaw Detector A-Scan -->
-      <div class="panel-box">
-        <div class="panel-header">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <strong>A-Scan Display</strong>
-            <label style="font-size:0.75rem;">Range:</label>
-            <select id="selectRange">
-              <option value="100">100 mm (10 mm/div)</option>
-              <option value="125" selected>125 mm (12.5 mm/div)</option>
-              <option value="200">200 mm (20 mm/div)</option>
-              <option value="250">250 mm (25 mm/div)</option>
-              <option value="500">500 mm (50 mm/div)</option>
+      <!-- RIGHT: A-SCAN OSCILLOSCOPE -->
+      <div class="crt-bezel">
+        <div class="bezel-toolbar">
+          <div class="bezel-group">
+            <strong style="font-family:var(--font-mono);color:var(--text-primary);">A-SCAN</strong>
+            <select class="ind-select" id="selectRange">
+              <option value="100">Range: 100 mm</option>
+              <option value="125" selected>Range: 125 mm</option>
+              <option value="200">Range: 200 mm</option>
+              <option value="250">Range: 250 mm</option>
+              <option value="500">Range: 500 mm</option>
             </select>
           </div>
-          <span id="couplingStatus" style="color:#10b981;font-weight:700;">Coupled (Oil Film OK)</span>
+          <span id="couplingStatus" style="font-family:var(--font-mono);font-size:0.74rem;color:var(--phosphor-green);font-weight:700;">COUPLED [OK]</span>
         </div>
 
-        <div class="telemetry-bar">
-          <div class="tele-cell"><span>Gate A Peak</span><strong id="hudPeak">0.0%</strong></div>
-          <div class="tele-cell"><span>Screen Div</span><strong id="hudDiv">---</strong></div>
-          <div class="tele-cell"><span>Sound Path (S)</span><strong id="hudPath">--- mm</strong></div>
-          <div class="tele-cell"><span>Surface (X)</span><strong id="hudSurf">--- mm</strong></div>
-          <div class="tele-cell"><span>Depth (d)</span><strong id="hudDepth">--- mm</strong></div>
-          <div class="tele-cell"><span>vs DAC</span><strong id="hudDac">--- dB</strong></div>
+        <!-- DIGITAL TELEMETRY STRIP -->
+        <div class="readout-strip">
+          <div class="r-box"><span class="lbl">GATE A %</span><span class="val" id="hudPeak">0.0%</span></div>
+          <div class="r-box"><span class="lbl">DIV (0-10)</span><span class="val cyan" id="hudDiv">---</span></div>
+          <div class="r-box"><span class="lbl">PATH (S)</span><span class="val cyan" id="hudPath">---</span></div>
+          <div class="r-box"><span class="lbl">SURF (X)</span><span class="val" id="hudSurf">---</span></div>
+          <div class="r-box"><span class="lbl">DEPTH (d)</span><span class="val" id="hudDepth">---</span></div>
+          <div class="r-box"><span class="lbl">DAC ΔdB</span><span class="val" id="hudDac">---</span></div>
         </div>
 
         <canvas id="ascanCanvas"></canvas>
       </div>
     </div>
 
-    <!-- Physical Probe & Specimen Controls -->
-    <div class="deck-group-title">1. Probe Manipulation (Drag Blue Probe on Canvas or Move USB Hardware Probe) & Specimen Thickness</div>
-    <div class="controls-grid">
-      <div class="ctrl-card probe-accent">
-        <div class="ctrl-top">
-          <span>Scan Position X (Left / Right)</span>
-          <span class="ctrl-val" id="valProbeX">0.0 mm</span>
+    <!-- COMPACT TABBED CONTROL DECK -->
+    <section class="control-deck">
+      <div class="deck-header">
+        <div class="deck-tabs">
+          <button class="d-tab active" data-deck="probe">1. PROBE & SPECIMEN</button>
+          <button class="d-tab" data-deck="cal">2. RECEIVER & TIME-BASE</button>
+          <button class="d-tab" data-deck="gate">3. GATE A & DAC CURVE</button>
         </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('probeX', -0.5)">-</button>
-          <input type="range" id="sliderProbeX" min="-42" max="20" step="0.5" value="0.0" />
-          <button class="step" onclick="nudge('probeX', 0.5)">+</button>
-        </div>
+        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">
+          TIP: Drag probe Left/Right on canvas to scan • Drag Up/Above surface for Lift-Off
+        </span>
       </div>
 
-      <div class="ctrl-card probe-accent">
-        <div class="ctrl-top">
-          <span>Lift-Off Y (Up / Above Block)</span>
-          <span class="ctrl-val" id="valProbeLift">0.0 mm</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('probeLift', -0.5)">-</button>
-          <input type="range" id="sliderProbeLift" min="0" max="20" step="0.5" value="0.0" />
-          <button class="step" onclick="nudge('probeLift', 0.5)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card probe-accent">
-        <div class="ctrl-top">
-          <span>Lateral Scan Z (Flaw Length)</span>
-          <span class="ctrl-val" id="valProbeZ">25.0 mm</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('probeZ', -0.5)">-</button>
-          <input type="range" id="sliderProbeZ" min="0" max="60" step="0.5" value="25.0" />
-          <button class="step" onclick="nudge('probeZ', 0.5)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card probe-accent" id="thicknessCard">
-        <div class="ctrl-top">
-          <span>Specimen Thickness (T)</span>
-          <span class="ctrl-val" id="valThickT" style="color:#38bdf8;">25.0 mm</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('thickT', -1)">-</button>
-          <input type="range" id="sliderThickT" min="10" max="80" step="1" value="25.0" />
-          <button class="step" onclick="nudge('thickT', 1)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card dac-accent" style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-        <div style="font-size:0.77rem;color:var(--text-muted);">
-          <strong style="color:#f59e0b;">DAC Curve:</strong><br/>
-          <span id="dacPointCount">0 pts recorded</span>
-        </div>
-        <div style="display:flex;gap:5px;">
-          <button class="btn warn" id="btnRecordDac">Record Pt</button>
-          <button class="btn sec" id="btnClearDac">Clear</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Instrument Receiver, Time-Base & Gate Controls -->
-    <div class="deck-group-title">2. Flaw Detector Time-Base, Receiver Gain & Electronic Gate A</div>
-    <div class="controls-grid">
-      <div class="ctrl-card">
-        <div class="ctrl-top">
-          <span>Material Velocity</span>
-          <span class="ctrl-val" id="valVel">3255 m/s</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('vel', -10)">-</button>
-          <input type="range" id="sliderVel" min="2000" max="6500" step="5" value="3255" />
-          <button class="step" onclick="nudge('vel', 10)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card">
-        <div class="ctrl-top">
-          <span>Probe Delay (Zero Offset)</span>
-          <span class="ctrl-val" id="valDelay">2.60 µs</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('delay', -0.05)">-</button>
-          <input type="range" id="sliderDelay" min="0" max="12" step="0.05" value="2.60" />
-          <button class="step" onclick="nudge('delay', 0.05)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card">
-        <div class="ctrl-top">
-          <span>Receiver Gain</span>
-          <span class="ctrl-val" id="valGain">22.0 dB</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('gain', -0.5)">-</button>
-          <input type="range" id="sliderGain" min="0" max="60" step="0.5" value="22.0" />
-          <button class="step" onclick="nudge('gain', 0.5)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card gate-accent">
-        <div class="ctrl-top">
-          <span>Gate A Start</span>
-          <span class="ctrl-val" id="valGateStart" style="color:#ef4444;">15.0 mm</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('gateStart', -1)">-</button>
-          <input type="range" id="sliderGateStart" min="0" max="450" step="1" value="15.0" />
-          <button class="step" onclick="nudge('gateStart', 1)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card gate-accent">
-        <div class="ctrl-top">
-          <span>Gate A Width</span>
-          <span class="ctrl-val" id="valGateWidth" style="color:#ef4444;">25.0 mm</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('gateWidth', -1)">-</button>
-          <input type="range" id="sliderGateWidth" min="3" max="200" step="1" value="25.0" />
-          <button class="step" onclick="nudge('gateWidth', 1)">+</button>
-        </div>
-      </div>
-
-      <div class="ctrl-card gate-accent">
-        <div class="ctrl-top">
-          <span>Gate A Threshold</span>
-          <span class="ctrl-val" id="valGateThresh" style="color:#ef4444;">20% FSH</span>
-        </div>
-        <div class="ctrl-row">
-          <button class="step" onclick="nudge('gateThresh', -1)">-</button>
-          <input type="range" id="sliderGateThresh" min="5" max="95" step="1" value="20" />
-          <button class="step" onclick="nudge('gateThresh', 1)">+</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Practical Experiment Worksheet -->
-    <div class="lab-sheet hidden" id="labSheetContainer">
-      <div class="lab-grid">
-        <div class="lab-instructions" id="labInstructions"></div>
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <strong style="font-size:0.84rem;">Laboratory Data Recording Sheet</strong>
-            <div style="display:flex;gap:6px;">
-              <button class="btn sec" id="btnCaptureRow">Capture Gate A to Row</button>
-              <button class="btn pass" id="btnGradeLab">Verify Lab Results</button>
-            </div>
+      <!-- TAB 1: PROBE & SPECIMEN -->
+      <div class="param-grid" id="deck-probe">
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Scan Position X (Left / Right)</span>
+            <span class="param-readout" id="valProbeX">0.0 mm</span>
           </div>
-          <div id="labTableContainer"></div>
-          <div class="status-banner" id="labFeedback">
-            Follow the procedure on the left, capture or enter readings, and click <strong>Verify Lab Results</strong>.
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('probeX', -0.5)">-</button>
+            <input type="range" id="sliderProbeX" min="-42" max="20" step="0.5" value="0.0" />
+            <button class="nudge-btn" onclick="nudge('probeX', 0.5)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Lift-Off Y (Air Gap Above Surface)</span>
+            <span class="param-readout" id="valProbeLift">0.0 mm</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('probeLift', -0.5)">-</button>
+            <input type="range" id="sliderProbeLift" min="0" max="20" step="0.5" value="0.0" />
+            <button class="nudge-btn" onclick="nudge('probeLift', 0.5)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Lateral Scan Z (Flaw Length)</span>
+            <span class="param-readout" id="valProbeZ">25.0 mm</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('probeZ', -0.5)">-</button>
+            <input type="range" id="sliderProbeZ" min="0" max="60" step="0.5" value="25.0" />
+            <button class="nudge-btn" onclick="nudge('probeZ', 0.5)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell" id="thicknessCard">
+          <div class="param-top">
+            <span>Specimen Thickness (T)</span>
+            <span class="param-readout" id="valThickT">25.0 mm</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('thickT', -1)">-</button>
+            <input type="range" id="sliderThickT" min="10" max="80" step="1" value="25.0" />
+            <button class="nudge-btn" onclick="nudge('thickT', 1)">+</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- General Status Bar -->
-    <div class="status-banner" id="generalStatusBar">
-      <strong>ISO / ASME Standard Workstation:</strong> Dimensions strictly match <strong>ISO 2400 (V1: 300×100×25 mm, R100, Ø50 mm hole, 85/91/100 mm step, Ø1.5 mm SDH)</strong>, <strong>ISO 7963 (V2: R25/R50, 43 mm height, Ø5 mm hole at 20 mm depth)</strong>, and <strong>ASME Sec. V Art. 4 (1/4T, 1/2T, 3/4T SDHs + 2%T ID/OD notches)</strong>.
-    </div>
+      <!-- TAB 2: RECEIVER & TIME-BASE -->
+      <div class="param-grid hidden" id="deck-cal">
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Material Velocity (m/s)</span>
+            <span class="param-readout" id="valVel">3255 m/s</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('vel', -10)">-</button>
+            <input type="range" id="sliderVel" min="2000" max="6500" step="5" value="3255" />
+            <button class="nudge-btn" onclick="nudge('vel', 10)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Probe Delay / Zero Offset (µs)</span>
+            <span class="param-readout" id="valDelay">2.60 µs</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('delay', -0.05)">-</button>
+            <input type="range" id="sliderDelay" min="0" max="12" step="0.05" value="2.60" />
+            <button class="nudge-btn" onclick="nudge('delay', 0.05)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Receiver Gain (dB)</span>
+            <span class="param-readout" id="valGain">22.0 dB</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('gain', -0.5)">-</button>
+            <input type="range" id="sliderGain" min="0" max="60" step="0.5" value="22.0" />
+            <button class="nudge-btn" onclick="nudge('gain', 0.5)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: GATE A & DAC -->
+      <div class="param-grid hidden" id="deck-gate">
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Gate A Start (mm)</span>
+            <span class="param-readout gate" id="valGateStart">15 mm</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('gateStart', -1)">-</button>
+            <input type="range" class="gate-slider" id="sliderGateStart" min="0" max="450" step="1" value="15" />
+            <button class="nudge-btn" onclick="nudge('gateStart', 1)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Gate A Width (mm)</span>
+            <span class="param-readout gate" id="valGateWidth">25 mm</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('gateWidth', -1)">-</button>
+            <input type="range" class="gate-slider" id="sliderGateWidth" min="3" max="200" step="1" value="25" />
+            <button class="nudge-btn" onclick="nudge('gateWidth', 1)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell">
+          <div class="param-top">
+            <span>Gate A Threshold (% FSH)</span>
+            <span class="param-readout gate" id="valGateThresh">20%</span>
+          </div>
+          <div class="slider-bar">
+            <button class="nudge-btn" onclick="nudge('gateThresh', -1)">-</button>
+            <input type="range" class="gate-slider" id="sliderGateThresh" min="5" max="95" step="1" value="20" />
+            <button class="nudge-btn" onclick="nudge('gateThresh', 1)">+</button>
+          </div>
+        </div>
+
+        <div class="param-cell" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--dac-amber);font-weight:700;font-family:var(--font-mono);">DAC CURVE</div>
+            <div style="font-size:0.74rem;color:var(--text-secondary);" id="dacPointCount">0 pts recorded</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="s-btn" style="border-color:var(--dac-amber);color:var(--dac-amber);" id="btnRecordDac">REC PT</button>
+            <button class="s-btn" id="btnClearDac">CLR</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LABORATORY EXPERIMENT SHEET (VISIBLE IN EXPERIMENT MODE) -->
+    <section class="lab-panel hidden" id="labSheetContainer">
+      <div class="lab-guide" id="labInstructions"></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:var(--font-mono);font-size:0.78rem;font-weight:700;color:var(--text-primary);">DATA RECORDING SHEET</span>
+          <div style="display:flex;gap:6px;">
+            <button class="s-btn" id="btnCaptureRow">CAPTURE GATE A</button>
+            <button class="s-btn active" id="btnGradeLab">VERIFY RESULTS</button>
+          </div>
+        </div>
+        <div id="labTableContainer"></div>
+        <div class="status-footer" style="margin-top:8px;" id="labFeedback">
+          Follow the manual steps on the left, capture Gate A readings into the table, and click VERIFY RESULTS.
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM STATUS BAR -->
+    <footer class="status-footer" id="generalStatusBar">
+      <span>STATUS: READY — ISO 2400 (V1: 300×100×25mm) | ISO 7963 (V2: R25/R50, Ø5mm) | ASME SEC. V (1/4T, 1/2T, 3/4T)</span>
+      <span style="color:var(--accent-cyan);">WEB SERIAL HIL: 115200 BAUD</span>
+    </footer>
   </div>
 
   <script>
@@ -643,9 +771,8 @@
     let workspaceMode = "general";
     let activeExpId = 1;
 
-    // Standard carbon steel acoustic velocities (ISO 2400)
-    let vLongTrue = 5920.0;   // m/s
-    let vShearTrue = 3255.0;  // m/s
+    let vLongTrue = 5920.0;   // ISO 2400 longitudinal velocity (m/s)
+    let vShearTrue = 3255.0;  // ISO 2400 shear velocity (m/s)
     let delayNormalTrue = 0.80;
     let delayAngleTrue = 2.60;
     const freqMHz = 4.0;
@@ -663,7 +790,6 @@
     let dacRefGain = 22.0;
     let dacModel = null;
 
-    // I.O.W. Beam Profile Block (BS 2704 / EN 12223)
     const iowSDHs = [
       { id: "SDH-1", x: 40.0, depth: 15.0 },
       { id: "SDH-2", x: 75.0, depth: 25.0 },
@@ -671,7 +797,6 @@
       { id: "SDH-4", x: 160.0, depth: 50.0 }
     ];
 
-    // Butt-Welded Plate (Weld centerline at X = 110 mm)
     const weldCenterX = 110.0;
     let weldDefect = {
       type: "Slag Inclusion",
@@ -689,14 +814,12 @@
     const liveSignal = new Float32Array(numSamples);
     const frozenSignal = new Float32Array(numSamples);
     const peakEnvelopeSignal = new Float32Array(numSamples);
-
     for (let i = 0; i < numSamples; i++) tAxis[i] = (i / (numSamples - 1)) * tMaxUs;
 
     let activeEchoes = [];
     let coordMap = null;
     let isDragging = false;
 
-    // DOM Elements
     const elBlock = document.getElementById("selectBlock");
     const elProbe = document.getElementById("selectProbe");
     const elSubOpt = document.getElementById("selectSubOpt");
@@ -725,7 +848,6 @@
       return Math.exp(-(liftMm * liftMm) / 0.08);
     }
 
-    // Dynamic ASME Sec. V T-434.2.1 SDH Positions based on Specimen Thickness T
     function getAsmeSDHs(T) {
       return [
         { id: "1/4 T", x: 55.0, depth: T * 0.25 },
@@ -747,40 +869,36 @@
       };
 
       const thickCard = document.getElementById("thicknessCard");
-      // Specimen thickness slider applies to ASME Sec. V block and Butt-Welded Plate
       thickCard.classList.toggle("hidden", currentBlock !== "asme" && currentBlock !== "weld");
 
       if (currentBlock === "v2") {
-        // ISO 7963 V2 Block
-        addOpt("r25", "Aim R25 (25 / 100 / 175 mm)");
-        addOpt("r50", "Aim R50 (50 / 125 / 200 mm)");
-        addOpt("hole5", "Aim Ø5mm Hole (Depth 20mm)");
+        addOpt("r25", "R25 Arc (25 / 100 / 175 mm)");
+        addOpt("r50", "R50 Arc (50 / 125 / 200 mm)");
+        addOpt("hole5", "Ø5 mm Hole (Depth 20 mm)");
         sProbeX.min = -42; sProbeX.max = 20; sProbeX.value = 0;
       } else if (currentBlock === "v1") {
-        // ISO 2400 V1 Block
         if (probeAngle === 0) {
           addOpt("posA", "Pos A: 25 mm Thickness");
           addOpt("posB", "Pos B: 100 mm Width");
           addOpt("posB_res", "Pos B: 85 / 91 / 100 mm Step");
-          addOpt("posC", "Pos C: 200 mm Length");
+          addOpt("posC", "Pos C: 300 mm Length");
           sProbeX.min = 10; sProbeX.max = 285; sProbeX.value = 60;
         } else {
-          addOpt("r100", "Aim R100 Quadrant (100/200mm)");
-          addOpt("hole50", "Aim Ø50mm Perspex Hole");
-          addOpt("sdh15", "Aim Ø1.5mm Sensitivity SDH");
-          addOpt("notch", "Lateral Notch Scan (Length)");
+          addOpt("r100", "R100 Quadrant (100 / 200 mm)");
+          addOpt("hole50", "Ø50 mm Perspex Hole");
+          addOpt("sdh15", "Ø1.5 mm Sensitivity SDH");
+          addOpt("notch", "Lateral Notch Scan");
           sProbeX.min = -35; sProbeX.max = 260; sProbeX.value = 0;
         }
       } else if (currentBlock === "asme") {
-        // ASME Sec. V Art. 4 Basic Calibration Block
-        addOpt("sdh", "1/4T, 1/2T, 3/4T SDHs (DAC)");
-        addOpt("notch_id", "2%T ID & OD Surface Notches");
+        addOpt("sdh", "1/4T, 1/2T, 3/4T SDHs");
+        addOpt("notch_id", "2%T ID & OD Notches");
         sProbeX.min = 5; sProbeX.max = 210; sProbeX.value = 25;
       } else if (currentBlock === "iow") {
         addOpt("profile", "SDH Beam Profile (-20 dB)");
         sProbeX.min = 5; sProbeX.max = 210; sProbeX.value = 15;
       } else if (currentBlock === "weld") {
-        addOpt("weld_scan", "Weld Scan (1st & 2nd Leg)");
+        addOpt("weld_scan", "Weld Scan (Leg 1 & 2)");
         addOpt("transfer_c", "Exp 9: Cal Block (Curve C)");
         addOpt("transfer_d", "Exp 9: Rough Piece (Curve D)");
         sProbeX.min = 5; sProbeX.max = 200; sProbeX.value = 45;
@@ -808,10 +926,9 @@
 
       if (coupling > 0.005) {
         if (currentBlock === "v2") {
-          // ISO 7963 V2 Block (12.5 mm thick, 43 mm tall, R25 & R50, Ø5mm hole at 20 mm depth)
           if (probeAngle === 0) {
             for (let n = 1; n <= 10; n++) {
-              activeEchoes.push({ distMm: n * 12.5, amp: 0.88 * Math.pow(0.74, n - 1) * coupling, label: `${n * 12.5}mm` });
+              activeEchoes.push({ distMm: n * 12.5, amp: 0.88 * Math.pow(0.74, n - 1) * coupling });
             }
           } else if (subOption === "r25" || subOption === "r50") {
             const r1 = subOption === "r25" ? 25.0 : 50.0;
@@ -828,116 +945,87 @@
               const dAng = normAng - probeAngle;
               const align = Math.exp(-(dAng * dAng) / (2.0 * 7.5 * 7.5));
               if (align > 0.01) {
-                activeEchoes.push({ distMm: s1, amp: 0.86 * align * coupling, label: `R${r1}` });
+                activeEchoes.push({ distMm: s1, amp: 0.86 * align * coupling });
                 const s2 = 2.0 * s1 + r2;
-                activeEchoes.push({ distMm: s2, amp: 0.52 * Math.pow(align, 1.5) * coupling, label: `R${r1}+R${r2}` });
+                activeEchoes.push({ distMm: s2, amp: 0.52 * Math.pow(align, 1.5) * coupling });
                 const s3 = s2 + r1 + r2;
-                activeEchoes.push({ distMm: s3, amp: 0.30 * Math.pow(align, 2.0) * coupling, label: `3rd Bounce` });
+                activeEchoes.push({ distMm: s3, amp: 0.30 * Math.pow(align, 2.0) * coupling });
               }
             }
           } else if (subOption === "hole5") {
-            // ISO 7963 Ø5 mm hole centered at (0, 20 mm)
             const holeDepth = 20.0;
             const targetX = -holeDepth * tanD(probeAngle);
             const dx = px - targetX;
             const bf = Math.exp(-(dx * dx) / (2.0 * 2.5 * 2.5));
             const sHole = (holeDepth / cosD(probeAngle)) - 2.5;
-            if (bf > 0.01) {
-              activeEchoes.push({ distMm: sHole, amp: 0.84 * bf * coupling, label: "Ø5mm Hole" });
-            }
+            if (bf > 0.01) activeEchoes.push({ distMm: sHole, amp: 0.84 * bf * coupling });
           }
         } else if (currentBlock === "v1") {
-          // ISO 2400 V1 Block (300 mm L x 100 mm W x 25 mm T)
           if (probeAngle === 0) {
             if (subOption === "posA") {
-              for (let n = 1; n <= 12; n++) {
-                activeEchoes.push({ distMm: n * 25.0, amp: 0.88 * Math.pow(0.76, n - 1) * coupling, label: `${n * 25}mm` });
-              }
+              for (let n = 1; n <= 12; n++) activeEchoes.push({ distMm: n * 25.0, amp: 0.88 * Math.pow(0.76, n - 1) * coupling });
             } else if (subOption === "posB") {
-              for (let n = 1; n <= 5; n++) {
-                activeEchoes.push({ distMm: n * 100.0, amp: 0.85 * Math.pow(0.68, n - 1) * coupling, label: `${n * 100}mm` });
-              }
+              for (let n = 1; n <= 5; n++) activeEchoes.push({ distMm: n * 100.0, amp: 0.85 * Math.pow(0.68, n - 1) * coupling });
             } else if (subOption === "posB_res") {
-              // ISO 2400 Resolution Step: 85 mm, 91 mm, 100 mm
-              activeEchoes.push({ distMm: 85.0, amp: 0.62 * coupling, label: "85mm Step" });
-              activeEchoes.push({ distMm: 91.0, amp: 0.74 * coupling, label: "91mm Slot" });
-              activeEchoes.push({ distMm: 100.0, amp: 0.84 * coupling, label: "100mm BW" });
+              activeEchoes.push({ distMm: 85.0, amp: 0.62 * coupling });
+              activeEchoes.push({ distMm: 91.0, amp: 0.74 * coupling });
+              activeEchoes.push({ distMm: 100.0, amp: 0.84 * coupling });
             } else if (subOption === "posC") {
-              // ISO 2400 300 mm Overall Length (and 200 mm step reference)
-              activeEchoes.push({ distMm: 200.0, amp: 0.45 * coupling, label: "200mm R100" });
-              activeEchoes.push({ distMm: 300.0, amp: 0.82 * coupling, label: "300mm End" });
+              activeEchoes.push({ distMm: 200.0, amp: 0.45 * coupling });
+              activeEchoes.push({ distMm: 300.0, amp: 0.82 * coupling });
             }
           } else {
             if (subOption === "r100") {
               const align = Math.exp(-(px * px) / (2.0 * 4.5 * 4.5));
               if (align > 0.01) {
-                activeEchoes.push({ distMm: 100.0, amp: 0.86 * align * coupling, label: "R100" });
-                activeEchoes.push({ distMm: 200.0, amp: 0.44 * Math.pow(align, 1.5) * coupling, label: "2x R100" });
+                activeEchoes.push({ distMm: 100.0, amp: 0.86 * align * coupling });
+                activeEchoes.push({ distMm: 200.0, amp: 0.44 * Math.pow(align, 1.5) * coupling });
               }
             } else if (subOption === "hole50") {
-              // ISO 2400 Ø50 mm hole centered at X = 235 mm (135 mm right of R100 index), depth = 50 mm
               const idealX = 135.0 - 50.0 * tanD(probeAngle);
               const dx = px - idealX;
               const bf = Math.exp(-(dx * dx) / (2.0 * 3.5 * 3.5));
-              if (bf > 0.01) {
-                const s = (50.0 / cosD(probeAngle)) - 25.0;
-                activeEchoes.push({ distMm: s, amp: 0.85 * bf * coupling, label: "Ø50mm Hole" });
-              }
+              if (bf > 0.01) activeEchoes.push({ distMm: (50.0 / cosD(probeAngle)) - 25.0, amp: 0.85 * bf * coupling });
             } else if (subOption === "sdh15") {
-              // ISO 2400 Ø1.5 mm sensitivity SDH at X = 285 mm (185 mm right of R100 index), depth = 85 mm (15 mm from bottom)
               const idealX = 185.0 - 85.0 * tanD(probeAngle);
               const dx = px - idealX;
               const bf = Math.exp(-(dx * dx) / (2.0 * 3.0 * 3.0));
-              if (bf > 0.01) {
-                const s = 85.0 / cosD(probeAngle);
-                activeEchoes.push({ distMm: s, amp: 0.78 * bf * coupling, label: "Ø1.5mm SDH" });
-              }
+              if (bf > 0.01) activeEchoes.push({ distMm: 85.0 / cosD(probeAngle), amp: 0.78 * bf * coupling });
             } else if (subOption === "notch") {
               const idealX = 80.0 - 20.0 * tanD(probeAngle);
               const dx = px - idealX;
               const bfX = Math.exp(-(dx * dx) / (2.0 * 3.0 * 3.0));
               const bfZ = lateralBeamResponse(pz, 15.0, 35.0, 4.5);
-              if (bfX * bfZ > 0.01) {
-                activeEchoes.push({ distMm: 20.0 / cosD(probeAngle), amp: 0.88 * bfX * bfZ * coupling, label: "Notch" });
-              }
+              if (bfX * bfZ > 0.01) activeEchoes.push({ distMm: 20.0 / cosD(probeAngle), amp: 0.88 * bfX * bfZ * coupling });
             }
           }
         } else if (currentBlock === "asme") {
-          // ASME Sec. V Art. 4 Basic Calibration Block (Thickness T, 1/4T, 1/2T, 3/4T SDHs + 2%T ID/OD Notches)
           if (probeAngle === 0) {
-            for (let n = 1; n <= 8; n++) {
-              activeEchoes.push({ distMm: n * T, amp: 0.88 * Math.pow(0.75, n - 1) * coupling, label: `${n}T` });
-            }
+            for (let n = 1; n <= 8; n++) activeEchoes.push({ distMm: n * T, amp: 0.88 * Math.pow(0.75, n - 1) * coupling });
           } else if (subOption === "sdh") {
             const holes = getAsmeSDHs(T);
             for (const h of holes) {
-              // 1st leg
               const s1 = h.depth / cosD(probeAngle);
               const ix1 = h.x - h.depth * tanD(probeAngle);
               const bf1 = Math.exp(-((px - ix1) ** 2) / (2.0 * 3.0 * 3.0));
-              if (bf1 > 0.01) {
-                activeEchoes.push({ distMm: s1, amp: 0.92 * Math.exp(-atten * s1) * bf1 * coupling, label: `${h.id} (Leg 1)` });
-              }
-              // 2nd leg (V-path bounce off bottom)
+              if (bf1 > 0.01) activeEchoes.push({ distMm: s1, amp: 0.92 * Math.exp(-atten * s1) * bf1 * coupling });
+
               const v2 = 2.0 * T - h.depth;
               const s2 = v2 / cosD(probeAngle);
               const ix2 = h.x - v2 * tanD(probeAngle);
               const bf2 = Math.exp(-((px - ix2) ** 2) / (2.0 * 3.2 * 3.2));
-              if (bf2 > 0.01) {
-                activeEchoes.push({ distMm: s2, amp: 0.85 * Math.exp(-atten * s2) * bf2 * coupling, label: `${h.id} (Leg 2)` });
-              }
+              if (bf2 > 0.01) activeEchoes.push({ distMm: s2, amp: 0.85 * Math.exp(-atten * s2) * bf2 * coupling });
             }
           } else {
-            // ASME 2%T ID (bottom at X = 175 mm) and OD (top at X = 195 mm) notches
             const sId = T / cosD(probeAngle);
             const ixId = 175.0 - T * tanD(probeAngle);
             const bfId = Math.exp(-((px - ixId) ** 2) / (2.0 * 2.8 * 2.8));
-            if (bfId > 0.01) activeEchoes.push({ distMm: sId, amp: 0.90 * Math.exp(-atten * sId) * bfId * coupling, label: "ID Notch (1/2 Skip)" });
+            if (bfId > 0.01) activeEchoes.push({ distMm: sId, amp: 0.90 * Math.exp(-atten * sId) * bfId * coupling });
 
             const sOd = (2.0 * T) / cosD(probeAngle);
             const ixOd = 195.0 - 2.0 * T * tanD(probeAngle);
             const bfOd = Math.exp(-((px - ixOd) ** 2) / (2.0 * 3.0 * 3.0));
-            if (bfOd > 0.01) activeEchoes.push({ distMm: sOd, amp: 0.84 * Math.exp(-atten * sOd) * bfOd * coupling, label: "OD Notch (Full Skip)" });
+            if (bfOd > 0.01) activeEchoes.push({ distMm: sOd, amp: 0.84 * Math.exp(-atten * sOd) * bfOd * coupling });
           }
         } else if (currentBlock === "iow") {
           for (const h of iowSDHs) {
@@ -945,83 +1033,56 @@
             const ix = h.x - h.depth * tanD(probeAngle);
             const sigma = 1.6 + 0.055 * s;
             const bf = Math.exp(-((px - ix) ** 2) / (2.0 * sigma * sigma));
-            if (bf > 0.008) {
-              activeEchoes.push({ distMm: s, amp: 0.90 * Math.exp(-0.008 * s) * bf * coupling, label: h.id });
-            }
+            if (bf > 0.008) activeEchoes.push({ distMm: s, amp: 0.90 * Math.exp(-0.008 * s) * bf * coupling });
           }
         } else if (currentBlock === "weld") {
-          // Variable-thickness Butt-Welded Plate (T mm)
-          const clampedDefectDepth = Math.min(T - 2.0, weldDefect.depth);
+          const clampedD = Math.min(T - 2.0, weldDefect.depth);
           if (probeAngle === 0) {
             const overLam = px > 55 && px < 75;
             if (overLam) {
-              activeEchoes.push({ distMm: T * 0.48, amp: 0.85 * coupling, label: "Lamination" });
-              activeEchoes.push({ distMm: T * 0.96, amp: 0.45 * coupling, label: "2nd Lam" });
+              activeEchoes.push({ distMm: T * 0.48, amp: 0.85 * coupling });
+              activeEchoes.push({ distMm: T * 0.96, amp: 0.45 * coupling });
             } else {
-              for (let n = 1; n <= 6; n++) {
-                activeEchoes.push({ distMm: n * T, amp: 0.88 * Math.pow(0.75, n - 1) * coupling, label: `${n * T}mm` });
-              }
+              for (let n = 1; n <= 6; n++) activeEchoes.push({ distMm: n * T, amp: 0.88 * Math.pow(0.75, n - 1) * coupling });
             }
           } else if (subOption === "transfer_c" || subOption === "transfer_d") {
             const s1 = (2.0 * T) / cosD(probeAngle);
             const s2 = (4.0 * T) / cosD(probeAngle);
             const s3 = (6.0 * T) / cosD(probeAngle);
-            activeEchoes.push({ distMm: s1, amp: 0.88 * transferLoss * Math.exp(-atten * s1) * coupling, label: "V-Path (1 Skip)" });
-            activeEchoes.push({ distMm: s2, amp: 0.78 * transferLoss * Math.exp(-atten * s2) * coupling, label: "W-Path (2 Skips)" });
-            activeEchoes.push({ distMm: s3, amp: 0.68 * transferLoss * Math.exp(-atten * s3) * coupling, label: "3-Skip Path" });
+            activeEchoes.push({ distMm: s1, amp: 0.88 * transferLoss * Math.exp(-atten * s1) * coupling });
+            activeEchoes.push({ distMm: s2, amp: 0.78 * transferLoss * Math.exp(-atten * s2) * coupling });
+            activeEchoes.push({ distMm: s3, amp: 0.68 * transferLoss * Math.exp(-atten * s3) * coupling });
           } else {
-            // Weld Root reflection at X = weldCenterX, depth = T
             const sRoot = T / cosD(probeAngle);
             const ixRoot = weldCenterX - T * tanD(probeAngle);
             const bfRoot = Math.exp(-((px - ixRoot) ** 2) / (2.0 * 2.2 * 2.2));
-            if (bfRoot > 0.01) {
-              activeEchoes.push({ distMm: sRoot, amp: 0.42 * bfRoot * coupling, label: "Weld Root Geometry" });
-            }
+            if (bfRoot > 0.01) activeEchoes.push({ distMm: sRoot, amp: 0.42 * bfRoot * coupling });
 
-            // Internal Weld Defect (1st & 2nd Leg)
             const bfZ = lateralBeamResponse(pz, weldDefect.zStart, weldDefect.zEnd, 4.2);
             const sigmaFlaw = 2.2 + weldDefect.height * 0.35;
 
-            const s1 = clampedDefectDepth / cosD(probeAngle);
-            const ix1 = weldDefect.x - clampedDefectDepth * tanD(probeAngle);
+            const s1 = clampedD / cosD(probeAngle);
+            const ix1 = weldDefect.x - clampedD * tanD(probeAngle);
             const bf1 = Math.exp(-((px - ix1) ** 2) / (2.0 * sigmaFlaw * sigmaFlaw));
-            if (bf1 * bfZ > 0.008) {
-              activeEchoes.push({
-                distMm: s1,
-                amp: weldDefect.reflectivity * Math.exp(-atten * s1) * bf1 * bfZ * coupling,
-                label: `${weldDefect.type} (Leg 1)`
-              });
-            }
+            if (bf1 * bfZ > 0.008) activeEchoes.push({ distMm: s1, amp: weldDefect.reflectivity * Math.exp(-atten * s1) * bf1 * bfZ * coupling });
 
-            const v2 = 2.0 * T - clampedDefectDepth;
+            const v2 = 2.0 * T - clampedD;
             const s2 = v2 / cosD(probeAngle);
             const ix2 = weldDefect.x - v2 * tanD(probeAngle);
             const bf2 = Math.exp(-((px - ix2) ** 2) / (2.0 * sigmaFlaw * sigmaFlaw));
-            if (bf2 * bfZ > 0.008) {
-              activeEchoes.push({
-                distMm: s2,
-                amp: weldDefect.reflectivity * 0.88 * Math.exp(-atten * s2) * bf2 * bfZ * coupling,
-                label: `${weldDefect.type} (Leg 2)`
-              });
-            }
+            if (bf2 * bfZ > 0.008) activeEchoes.push({ distMm: s2, amp: weldDefect.reflectivity * 0.88 * Math.exp(-atten * s2) * bf2 * bfZ * coupling });
           }
         }
       }
 
-      const times = activeEchoes.map(e => ({
-        t0: (2.0 * e.distMm) / (vTrue / 1000.0) + dTrue,
-        amp: e.amp
-      }));
-
+      const times = activeEchoes.map(e => ({ t0: (2.0 * e.distMm) / (vTrue / 1000.0) + dTrue, amp: e.amp }));
       for (let i = 0; i < numSamples; i++) {
         const t = tAxis[i];
         let rf = 0.0;
         for (let k = 0; k < times.length; k++) {
           const dt = t - times[k].t0;
           if (Math.abs(dt) > 2.2) continue;
-          const env = Math.exp(-(dt * dt) / 0.28);
-          const carrier = Math.sin(2.0 * Math.PI * freqMHz * dt);
-          rf += times[k].amp * env * carrier;
+          rf += times[k].amp * Math.exp(-(dt * dt) / 0.28) * Math.sin(2.0 * Math.PI * freqMHz * dt);
         }
         liveSignal[i] = Math.abs(rf);
       }
@@ -1087,23 +1148,23 @@
       if (m.triggered) {
         elPeak.classList.add("alarm");
         document.getElementById("hudDiv").textContent = m.div.toFixed(2);
-        document.getElementById("hudPath").textContent = `${m.peakS.toFixed(1)} mm`;
-        document.getElementById("hudSurf").textContent = `${m.surfX.toFixed(1)} mm`;
-        document.getElementById("hudDepth").textContent = `${m.depthD.toFixed(1)} mm`;
+        document.getElementById("hudPath").textContent = `${m.peakS.toFixed(1)}mm`;
+        document.getElementById("hudSurf").textContent = `${m.surfX.toFixed(1)}mm`;
+        document.getElementById("hudDepth").textContent = `${m.depthD.toFixed(1)}mm`;
         document.getElementById("hudDac").textContent = m.dacDb !== null
-          ? `${m.dacDb >= 0 ? "+" : ""}${m.dacDb.toFixed(1)} dB` : "No DAC";
+          ? `${m.dacDb >= 0 ? "+" : ""}${m.dacDb.toFixed(1)}dB` : "N/A";
       } else {
         elPeak.classList.remove("alarm");
         document.getElementById("hudDiv").textContent = "---";
-        document.getElementById("hudPath").textContent = "--- mm";
-        document.getElementById("hudSurf").textContent = "--- mm";
-        document.getElementById("hudDepth").textContent = "--- mm";
-        document.getElementById("hudDac").textContent = "--- dB";
+        document.getElementById("hudPath").textContent = "---";
+        document.getElementById("hudSurf").textContent = "---";
+        document.getElementById("hudDepth").textContent = "---";
+        document.getElementById("hudDac").textContent = "---";
       }
     }
 
     // =========================================================
-    // 5. 2D STANDARD SPECIMEN RENDERER (ISO 2400 / 7963 / ASME)
+    // 5. 2D SPECIMEN & BEAM RENDERER
     // =========================================================
     const specCanvas = document.getElementById("specimenCanvas");
     const specCtx = specCanvas.getContext("2d");
@@ -1125,7 +1186,7 @@
       const c = getCoupling(liftMm);
 
       if (c > 0.05) {
-        ctx.fillStyle = `rgba(56, 189, 248, ${0.45 * c})`;
+        ctx.fillStyle = `rgba(14, 165, 233, ${0.45 * c})`;
         const w = (probeAngle === 0 ? 15 : 22) * scale;
         const x0 = probeAngle === 0 ? px - w / 2 : px + (flipLeft ? -w * 0.35 : -w * 0.65);
         ctx.fillRect(x0 - 1, pySurf - Math.max(2, liftPx), w + 2, Math.max(2, liftPx));
@@ -1151,7 +1212,7 @@
       ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 4); ctx.stroke();
 
       ctx.fillStyle = "#f8fafc";
-      ctx.font = "bold 10px sans-serif";
+      ctx.font = "bold 10px monospace";
       ctx.textAlign = "center";
       ctx.fillText(probeAngle === 0 ? "0°" : `${probeAngle}°`, x0 + w / 2, -h - 4);
       ctx.restore();
@@ -1162,17 +1223,17 @@
       const py = y0 + (y1 - y0) * frac;
       const ang = Math.atan2(y1 - y0, x1 - x0);
       ctx.save();
-      ctx.strokeStyle = color; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(px, py, 9, ang - 0.5, ang + 0.5); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.arc(px, py, 8, ang - 0.5, ang + 0.5); ctx.stroke();
       ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, 2.8, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
 
     function renderSpecimen(tPulse) {
       const { w, h } = prepCanvas(specCanvas, specCtx);
       const ctx = specCtx;
-      ctx.fillStyle = "#030712";
+      ctx.fillStyle = "#05070a";
       ctx.fillRect(0, 0, w, h);
 
       const px = parseFloat(sProbeX.value);
@@ -1183,7 +1244,6 @@
       const frac = tPulse % 1.0;
 
       if (currentBlock === "v2") {
-        // ISO 7963 V2 Block (R25, R50, 43 mm height, Ø5 mm hole at 20 mm depth)
         const scale = Math.min((w - 50) / 88, (h - 90) / 72);
         const ox = w * 0.62;
         const oy = h * 0.42;
@@ -1203,16 +1263,15 @@
         p = toPx(-Math.sqrt(2500 - thick * thick), thick); ctx.lineTo(p.x, p.y);
         ctx.arc(ox, oy, 50 * scale, angL, Math.PI, false);
         ctx.closePath();
-        ctx.fillStyle = "#1e293b"; ctx.fill();
-        ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = "#161d29"; ctx.fill();
+        ctx.strokeStyle = "#4b5563"; ctx.lineWidth = 1.8; ctx.stroke();
 
-        // Ø5 mm Angle Hole at (0, 20 mm)
         const pHole = toPx(0, 20);
-        ctx.fillStyle = "#030712"; ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.4;
+        ctx.fillStyle = "#05070a"; ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.arc(pHole.x, pHole.y, 2.5 * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-        ctx.fillStyle = "#94a3b8"; ctx.font = "10px monospace"; ctx.textAlign = "center";
-        ctx.fillText("0 (Index)", ox, oy + 16);
+        ctx.fillStyle = "#8b9bb4"; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillText("0 (INDEX)", ox, oy + 16);
         ctx.fillText("R25", ox + 35 * scale, oy + 16 * scale);
         ctx.fillText("R50", ox - 56 * scale, oy + 20 * scale);
         ctx.fillText("Ø5mm", pHole.x + 22, pHole.y + 4);
@@ -1224,14 +1283,13 @@
           const endX = px + dir * len * sinD(probeAngle);
           const endY = len * cosD(probeAngle);
           const pEnd = toPx(endX, endY);
-          ctx.strokeStyle = `rgba(56, 189, 248, ${0.85 * coupling})`; ctx.lineWidth = 2;
+          ctx.strokeStyle = `rgba(14, 165, 233, ${0.85 * coupling})`; ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
           drawPulseWavefront(ctx, pStart.x, pStart.y, pEnd.x, pEnd.y, frac, "#38bdf8");
         }
         drawProbe(ctx, pStart.x, pStart.y, lift, scale * 0.72, subOption === "r50");
 
       } else if (currentBlock === "v1") {
-        // ISO 2400 V1 Block: 300 mm (L) x 100 mm (W), R100, Ø50 mm hole at (235, 50), 85/91/100 mm step, Ø1.5 mm SDH at (285, 85)
         const scale = Math.min((w - 36) / 300, (h - 90) / 100);
         const ox = (w - 300 * scale) / 2;
         const oy = 72;
@@ -1251,20 +1309,18 @@
         p = toPx(85, 100); ctx.lineTo(p.x, p.y);
         ctx.arc(ox + 100 * scale, oy, 100 * scale, Math.PI / 2, Math.PI, false);
         ctx.closePath();
-        ctx.fillStyle = "#1e293b"; ctx.fill();
-        ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = "#161d29"; ctx.fill();
+        ctx.strokeStyle = "#4b5563"; ctx.lineWidth = 1.8; ctx.stroke();
 
-        // Ø50 mm Perspex Hole at X = 235 mm, Y = 50 mm
         const pH50 = toPx(235, 50);
-        ctx.fillStyle = "#0f172a"; ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.4;
+        ctx.fillStyle = "#0b111a"; ctx.strokeStyle = "#0ea5e9"; ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.arc(pH50.x, pH50.y, 25 * scale, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-        // Ø1.5 mm Sensitivity SDH at X = 285 mm, Y = 85 mm (15 mm from bottom & right)
         const pH15 = toPx(285, 85);
         ctx.fillStyle = "#f59e0b";
         ctx.beginPath(); ctx.arc(pH15.x, pH15.y, 2.2, 0, Math.PI * 2); ctx.fill();
 
-        ctx.fillStyle = "#94a3b8"; ctx.font = "10px monospace"; ctx.textAlign = "center";
+        ctx.fillStyle = "#8b9bb4"; ctx.font = "10px monospace"; ctx.textAlign = "center";
         ctx.fillText("R100 (0)", ox + 100 * scale, oy + 14);
         ctx.fillText("Ø50mm", pH50.x, pH50.y + 4);
         ctx.fillText("85/91/100", ox + 92 * scale, oy + 80 * scale);
@@ -1275,17 +1331,14 @@
           const endX = probeAngle === 0 ? actualX : actualX + (subOption === "r100" ? -100 * sinD(probeAngle) : 85 * sinD(probeAngle));
           const endY = probeAngle === 0 ? 100 : (subOption === "r100" ? 100 * cosD(probeAngle) : 85 * cosD(probeAngle));
           const pEnd = toPx(endX, endY);
-          ctx.strokeStyle = `rgba(56, 189, 248, ${0.85 * coupling})`; ctx.lineWidth = 2;
+          ctx.strokeStyle = `rgba(14, 165, 233, ${0.85 * coupling})`; ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
           drawPulseWavefront(ctx, pStart.x, pStart.y, pEnd.x, pEnd.y, frac, "#38bdf8");
         }
-        if (probeAngle > 0) {
-          coordMap.toMm = (cx, cy) => ({ xMm: (cx - ox) / scale - 100, yMm: (cy - oy) / scale });
-        }
+        if (probeAngle > 0) coordMap.toMm = (cx, cy) => ({ xMm: (cx - ox) / scale - 100, yMm: (cy - oy) / scale });
         drawProbe(ctx, pStart.x, pStart.y, lift, scale * 1.4, subOption === "r100");
 
       } else if (currentBlock === "asme" || currentBlock === "iow") {
-        // ASME Sec. V Art. 4 Basic Calibration Block (Dynamic Thickness T) or I.O.W. Block
         const bw = 225.0;
         const bh = currentBlock === "asme" ? T : 75.0;
         const scale = Math.min((w - 40) / bw, (h - 95) / bh);
@@ -1297,7 +1350,7 @@
         };
         const toPx = coordMap.toPx;
 
-        ctx.fillStyle = "#1e293b"; ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2;
+        ctx.fillStyle = "#161d29"; ctx.strokeStyle = "#4b5563"; ctx.lineWidth = 1.8;
         ctx.fillRect(ox, oy, bw * scale, bh * scale);
         ctx.strokeRect(ox, oy, bw * scale, bh * scale);
 
@@ -1305,22 +1358,21 @@
         ctx.font = "10px monospace"; ctx.textAlign = "left";
         for (const hole of holes) {
           const ph = toPx(hole.x, hole.depth);
-          ctx.fillStyle = "#030712"; ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.arc(ph.x, ph.y, 3.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = "#05070a"; ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.arc(ph.x, ph.y, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
           ctx.fillStyle = "#cbd5e1";
           ctx.fillText(`${hole.id} (${hole.depth.toFixed(1)}mm)`, ph.x + 6, ph.y + 3);
         }
 
         if (currentBlock === "asme") {
-          // 2%T ID & OD Surface Notches per ASME Sec. V T-434.2.1
           const pId = toPx(175, bh);
           const pOd = toPx(195, 0);
           ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(pId.x, pId.y); ctx.lineTo(pId.x, pId.y - 6); ctx.stroke();
           ctx.beginPath(); ctx.moveTo(pOd.x, pOd.y); ctx.lineTo(pOd.x, pOd.y + 6); ctx.stroke();
           ctx.fillStyle = "#fca5a5";
-          ctx.fillText("ID Notch", pId.x - 18, pId.y + 12);
-          ctx.fillText("OD Notch", pOd.x - 18, pOd.y - 6);
+          ctx.fillText("ID", pId.x - 6, pId.y + 12);
+          ctx.fillText("OD", pOd.x - 6, pOd.y - 6);
         }
 
         const pStart = toPx(px, 0);
@@ -1328,14 +1380,13 @@
           const endX = probeAngle === 0 ? px : Math.min(bw, px + bh * tanD(probeAngle));
           const endY = probeAngle === 0 ? bh : (endX - px) / tanD(probeAngle);
           const pEnd = toPx(endX, endY);
-          ctx.strokeStyle = `rgba(56, 189, 248, ${0.85 * coupling})`; ctx.lineWidth = 2;
+          ctx.strokeStyle = `rgba(14, 165, 233, ${0.85 * coupling})`; ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(pStart.x, pStart.y); ctx.lineTo(pEnd.x, pEnd.y); ctx.stroke();
           drawPulseWavefront(ctx, pStart.x, pStart.y, pEnd.x, pEnd.y, frac, "#38bdf8");
         }
         drawProbe(ctx, pStart.x, pStart.y, lift, scale * 0.85, false);
 
       } else if (currentBlock === "weld") {
-        // Variable-Thickness Butt-Welded Plate + Plan View Strip
         const pw = 210.0;
         const scale = Math.min((w - 40) / pw, (h - 155) / T);
         const ox = (w - pw * scale) / 2;
@@ -1346,7 +1397,7 @@
         };
         const toPx = coordMap.toPx;
 
-        ctx.fillStyle = "#1e293b"; ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2;
+        ctx.fillStyle = "#161d29"; ctx.strokeStyle = "#4b5563"; ctx.lineWidth = 1.8;
         ctx.fillRect(ox, oy, pw * scale, T * scale);
         ctx.strokeRect(ox, oy, pw * scale, T * scale);
 
@@ -1355,7 +1406,7 @@
         const pBotL = toPx(weldCenterX - 3, T);
         const pBotR = toPx(weldCenterX + 3, T);
 
-        ctx.fillStyle = "#334155";
+        ctx.fillStyle = "#232d3f";
         ctx.beginPath();
         ctx.moveTo(pTopL.x, pTopL.y);
         ctx.quadraticCurveTo(toPx(weldCenterX, -4).x, toPx(weldCenterX, -4).y, pTopR.x, pTopR.y);
@@ -1363,7 +1414,7 @@
         ctx.quadraticCurveTo(toPx(weldCenterX, T + 2.5).x, toPx(weldCenterX, T + 2.5).y, pBotL.x, pBotL.y);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1.3; ctx.stroke();
+        ctx.strokeStyle = "#64748b"; ctx.lineWidth = 1.2; ctx.stroke();
 
         const clampedD = Math.min(T - 2.0, weldDefect.depth);
         if (revealDefect) {
@@ -1373,7 +1424,7 @@
           ctx.ellipse(pf.x, pf.y, 4, (weldDefect.height / 2) * scale, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = "#fca5a5"; ctx.font = "10px monospace"; ctx.textAlign = "left";
-          ctx.fillText(`${weldDefect.type} (d=${clampedD.toFixed(1)}mm, T=${T}mm)`, pf.x + 8, pf.y);
+          ctx.fillText(`${weldDefect.type} (d=${clampedD.toFixed(1)}mm)`, pf.x + 8, pf.y);
         }
 
         const p0 = toPx(px, 0);
@@ -1382,7 +1433,7 @@
           const x1 = probeAngle === 0 ? px : Math.min(pw, px + halfSkip);
           const y1 = probeAngle === 0 ? T : (x1 - px) / tanD(probeAngle);
           const p1 = toPx(x1, y1);
-          ctx.strokeStyle = `rgba(56, 189, 248, ${0.85 * coupling})`; ctx.lineWidth = 2;
+          ctx.strokeStyle = `rgba(14, 165, 233, ${0.85 * coupling})`; ctx.lineWidth = 1.8;
           ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
           drawPulseWavefront(ctx, p0.x, p0.y, p1.x, p1.y, frac, "#38bdf8");
 
@@ -1396,14 +1447,14 @@
         }
         drawProbe(ctx, p0.x, p0.y, lift, scale * 0.85, false);
 
-        const planY = oy + T * scale + 28;
-        const planH = 42;
-        ctx.fillStyle = "#0f172a"; ctx.strokeStyle = "#475569"; ctx.lineWidth = 1.2;
+        const planY = oy + T * scale + 26;
+        const planH = 40;
+        ctx.fillStyle = "#0b0f17"; ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.2;
         ctx.fillRect(ox, planY, pw * scale, planH);
         ctx.strokeRect(ox, planY, pw * scale, planH);
 
         const wPlanX = ox + weldCenterX * scale;
-        ctx.fillStyle = "#1e293b";
+        ctx.fillStyle = "#161d29";
         ctx.fillRect(wPlanX - 8 * scale, planY, 16 * scale, planH);
 
         if (revealDefect) {
@@ -1414,36 +1465,36 @@
         }
 
         const pzPx = planY + (pz / 60.0) * planH;
-        ctx.fillStyle = "#38bdf8";
+        ctx.fillStyle = "#0ea5e9";
         ctx.beginPath(); ctx.arc(ox + px * scale, pzPx, 4, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#94a3b8"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
-        ctx.fillText(`Plan View (Lateral Z = ${pz.toFixed(1)} mm | Plate T = ${T} mm)`, ox, planY - 4);
+        ctx.fillStyle = "#8b9bb4"; ctx.font = "10px monospace"; ctx.textAlign = "left";
+        ctx.fillText(`PLAN VIEW (Z = ${pz.toFixed(1)}mm | T = ${T}mm)`, ox, planY - 4);
       }
     }
 
     // =========================================================
-    // 6. 10-DIVISION A-SCAN OSCILLOSCOPE RENDERER
+    // 6. 10-DIVISION INDUSTRIAL A-SCAN OSCILLOSCOPE
     // =========================================================
     function renderAScan(gateMeas) {
       const { w, h } = prepCanvas(ascanCanvas, ascanCtx);
       const ctx = ascanCtx;
 
-      const padL = 42, padR = 14, padT = 18, padB = 32;
+      const padL = 40, padR = 14, padT = 16, padB = 30;
       const plotW = w - padL - padR;
       const plotH = h - padT - padB;
 
-      ctx.fillStyle = "#030712";
+      ctx.fillStyle = "#05070a";
       ctx.fillRect(0, 0, w, h);
 
       ctx.font = "10px monospace";
       ctx.textAlign = "right";
       for (let pct = 0; pct <= 100; pct += 10) {
         const y = padT + plotH - (pct / 100.0) * plotH;
-        ctx.strokeStyle = pct % 50 === 0 ? "#334155" : "#1e293b";
-        ctx.lineWidth = pct % 50 === 0 ? 1.2 : 0.8;
+        ctx.strokeStyle = pct % 50 === 0 ? "#283447" : "#151c28";
+        ctx.lineWidth = pct % 50 === 0 ? 1.1 : 0.7;
         ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
         if (pct % 20 === 0) {
-          ctx.fillStyle = "#94a3b8";
+          ctx.fillStyle = "#8b9bb4";
           ctx.fillText(`${pct}%`, padL - 6, y + 3);
         }
       }
@@ -1451,17 +1502,17 @@
       ctx.textAlign = "center";
       for (let div = 0; div <= 10; div++) {
         const x = padL + (div / 10.0) * plotW;
-        ctx.strokeStyle = div % 5 === 0 ? "#334155" : "#1e293b";
-        ctx.lineWidth = div % 5 === 0 ? 1.2 : 0.8;
+        ctx.strokeStyle = div % 5 === 0 ? "#283447" : "#151c28";
+        ctx.lineWidth = div % 5 === 0 ? 1.1 : 0.7;
         ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
 
         ctx.fillStyle = "#e2e8f0";
         ctx.fillText(`${div}`, x, padT + plotH + 13);
-        ctx.fillStyle = "#64748b";
+        ctx.fillStyle = "#56657d";
         ctx.fillText(`${Math.round((div / 10.0) * displayRangeMm)}`, x, padT + plotH + 24);
       }
 
-      ctx.strokeStyle = "#475569";
+      ctx.strokeStyle = "#334155";
       for (let sub = 0; sub <= 50; sub++) {
         const x = padL + (sub / 50.0) * plotW;
         ctx.beginPath(); ctx.moveTo(x, padT + plotH); ctx.lineTo(x, padT + plotH - 4); ctx.stroke();
@@ -1499,8 +1550,8 @@
       const gx2 = padL + (Math.min(displayRangeMm, gStart + gWidth) / displayRangeMm) * plotW;
       const gy = padT + plotH - (gThresh / 100.0) * plotH;
 
-      ctx.strokeStyle = gateMeas.triggered ? "#ef4444" : "#f87171";
-      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = gateMeas.triggered ? "#ef4444" : "#dc2626";
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       ctx.moveTo(gx1, gy); ctx.lineTo(gx2, gy);
       ctx.moveTo(gx1, gy - 5); ctx.lineTo(gx1, gy + 5);
@@ -1516,7 +1567,7 @@
       ctx.beginPath(); ctx.rect(padL, padT, plotW, plotH); ctx.clip();
 
       if (showPeakEnvelope) {
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.55)";
+        ctx.strokeStyle = "rgba(14, 165, 233, 0.5)";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         let st = false;
@@ -1531,14 +1582,14 @@
         ctx.stroke();
       }
 
-      ctx.strokeStyle = isFrozen ? "#38bdf8" : "#22c55e";
-      ctx.lineWidth = 1.7;
+      ctx.strokeStyle = isFrozen ? "#38bdf8" : "#10b981";
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       let started = false;
       for (let i = 0; i < numSamples; i++) {
         const mm = ((tAxis[i] - dSet) * (vSet / 1000.0)) / 2.0;
         if (mm < 0 || mm > displayRangeMm) continue;
-        const noise = isFrozen ? 0 : Math.random() * 0.006;
+        const noise = isFrozen ? 0 : Math.random() * 0.005;
         const amp = Math.min(1.0, (trace[i] + noise) * gainMult);
         const x = padL + (mm / displayRangeMm) * plotW;
         const y = padT + plotH - amp * plotH;
@@ -1564,8 +1615,8 @@
         serialPort = await navigator.serial.requestPort();
         await serialPort.open({ baudRate: 115200 });
         keepReadingHW = true;
-        btn.classList.add("connected");
-        btn.textContent = "USB Probe Connected";
+        btn.classList.add("online");
+        btn.textContent = "USB ONLINE";
 
         const decoder = new TextDecoderStream();
         serialPort.readable.pipeTo(decoder.writable);
@@ -1590,7 +1641,7 @@
               if (typeof d.angle === "number" && d.angle !== probeAngle) {
                 elProbe.value = String(d.angle);
                 probeAngle = d.angle;
-                sVel.value = probeAngle === 0 ? vLongTrue : vShearTrue;
+                sVel.value = getTrueVelocity();
                 sDelay.value = getTrueDelay().toFixed(2);
                 populateSubOptions();
               }
@@ -1604,32 +1655,32 @@
     });
 
     // =========================================================
-    // 8. NUKLEAR MALAYSIA PRACTICAL EXPERIMENTS (1-11)
+    // 8. NUKLEAR MALAYSIA LEVEL 2 EXPERIMENTS (1-11)
     // =========================================================
     const experimentsData = {
       1: {
-        title: "Experiment 1: Time-Base Calibration of Longitudinal Waves (ISO 2400 V1)",
+        title: "EXP 01 — Time-Base Calibration of Longitudinal Waves (ISO 2400 V1)",
         block: "v1", probe: "0", sub: "posA", range: "100",
         steps: [
-          "On the <strong>ISO 2400 V1 Block</strong> with a <strong>0° Normal Probe</strong> (5920 m/s), place probe at <strong>Pos A (25 mm thickness)</strong>.",
+          "Select <strong>IIW V1 Block</strong> and <strong>0° Normal Probe</strong> (5920 m/s) at <strong>Pos A (25 mm thickness)</strong>.",
           "Align backwall echoes to divisions <strong>2.5, 5.0, 7.5, and 10.0</strong> on the 100 mm range.",
-          "Verify <strong>Pos B (100 mm width)</strong> at division 10.0 (or 5.0 on 200 mm range) and <strong>Pos C (300 mm length / 200 mm step)</strong> on 500 mm range."
+          "Verify <strong>Pos B (100 mm width)</strong> and <strong>Pos C (300 mm length)</strong> on 200 mm / 500 mm ranges."
         ],
-        headers: ["Position", "Range (mm)", "Ref Path (mm)", "Expected Div", "Observed Div"],
+        headers: ["Position", "Range", "Ref Path", "Expected Div", "Observed Div"],
         rows: [
-          ["Pos A (1st BW)", "100", "25", "2.50", ""],
-          ["Pos A (4th BW)", "100", "100", "10.00", ""],
-          ["Pos B (Width)", "200", "100", "5.00", ""],
-          ["Pos C (End)", "500", "300", "6.00", ""]
+          ["Pos A (1st BW)", "100 mm", "25 mm", "2.50", ""],
+          ["Pos A (4th BW)", "100 mm", "100 mm", "10.00", ""],
+          ["Pos B (Width)", "200 mm", "100 mm", "5.00", ""],
+          ["Pos C (End)", "500 mm", "300 mm", "6.00", ""]
         ]
       },
       2: {
-        title: "Experiment 2: Linearity and Resolution of Ultrasonic Flaw Detector (ISO 2400 V1)",
+        title: "EXP 02 — Linearity & Axial Resolution Check (ISO 2400 V1)",
         block: "v1", probe: "0", sub: "posA", range: "100",
         steps: [
-          "<strong>Horizontal Linearity:</strong> Align 1st and 4th echoes at V1 Pos A to 2.5 and 10.0 div; check 5.0 and 7.5 div.",
+          "<strong>Horizontal Linearity:</strong> Align 1st & 4th echoes at V1 Pos A to 2.5 and 10.0 div; verify 5.0 and 7.5 div.",
           "<strong>Vertical Linearity:</strong> Set echo to 80% FSH, drop by 6.0 dB (should read 40% FSH).",
-          "<strong>Axial Resolution:</strong> Switch to <strong>Pos B: 85 / 91 / 100 mm Step</strong> and verify three distinct separated peaks."
+          "<strong>Axial Resolution:</strong> Switch to <strong>Pos B: 85 / 91 / 100 mm Step</strong> and verify three separated peaks."
         ],
         headers: ["Check", "Target", "Expected", "Observed"],
         rows: [
@@ -1640,13 +1691,13 @@
         ]
       },
       3: {
-        title: "Experiment 3: Determination of Probe Index and Probe Angle (V1 & V2)",
+        title: "EXP 03 — Probe Index & Refracted Angle Verification (V1 & V2)",
         block: "v2", probe: "60", sub: "r25", range: "125",
         steps: [
-          "Slide angle probe across the <strong>0 (Index)</strong> mark on the ISO 7963 V2 Block (or ISO 2400 V1 R100) to maximize the radius echo.",
-          "Switch to <strong>Aim Ø5mm Hole (Depth 20mm)</strong> on V2 (or <strong>Ø50mm Perspex Hole</strong> on V1) and maximize the hole echo to verify refracted angle."
+          "Slide angle probe across the <strong>0 (INDEX)</strong> mark on the ISO 7963 V2 Block (or ISO 2400 V1 R100) to maximize the radius echo.",
+          "Switch to <strong>Ø5 mm Hole (Depth 20 mm)</strong> on V2 (or <strong>Ø50 mm Perspex Hole</strong> on V1) and maximize the echo to verify refracted angle."
         ],
-        headers: ["Probe Nominal", "Measured Index (mm)", "Verified Angle (°)", "Deviation (°)"],
+        headers: ["Nominal Angle", "Measured Index", "Verified Angle", "Deviation"],
         rows: [
           ["45° Shear", "", "", ""],
           ["60° Shear", "", "", ""],
@@ -1654,29 +1705,29 @@
         ]
       },
       4: {
-        title: "Experiment 4: Time-Base Calibration of Transverse Waves up to 200 mm",
+        title: "EXP 04 — Shear-Wave Time-Base Calibration up to 200 mm",
         block: "v2", probe: "60", sub: "r25", range: "200",
         steps: [
           "Set Range to <strong>200 mm</strong> (20 mm/div) with shear velocity ~3255 m/s.",
-          "On V2 <strong>Aim R25</strong>, verify echoes at <strong>25 mm</strong> (div 1.25) and <strong>100 mm</strong> (div 5.00).",
-          "Switch to <strong>Aim R50</strong> to verify <strong>50 mm</strong> (div 2.50), <strong>125 mm</strong> (div 6.25), and <strong>200 mm</strong> (div 10.00)."
+          "On V2 <strong>R25 Arc</strong>, verify echoes at <strong>25 mm</strong> (div 1.25) and <strong>100 mm</strong> (div 5.00).",
+          "Switch to <strong>R50 Arc</strong> to verify <strong>50 mm</strong> (div 2.50), <strong>125 mm</strong> (div 6.25), and <strong>200 mm</strong> (div 10.00)."
         ],
-        headers: ["Reflector", "Sound Path (mm)", "Expected Div", "Observed Div"],
+        headers: ["Reflector", "Sound Path", "Expected Div", "Observed Div"],
         rows: [
-          ["V2 R25", "25", "1.25", ""],
-          ["V2 R50", "50", "2.50", ""],
-          ["V2 R25+R50", "100", "5.00", ""],
-          ["V2 200mm Path", "200", "10.00", ""]
+          ["V2 R25", "25 mm", "1.25", ""],
+          ["V2 R50", "50 mm", "2.50", ""],
+          ["V2 R25+R50", "100 mm", "5.00", ""],
+          ["V2 200mm Path", "200 mm", "10.00", ""]
         ]
       },
       5: {
-        title: "Experiment 5: Vertical Beam-Profile Plotting (I.O.W. Block)",
+        title: "EXP 05 — Vertical Beam-Profile Plotting (I.O.W. Block)",
         block: "iow", probe: "60", sub: "profile", range: "125",
         steps: [
           "Maximize each SDH on the I.O.W. block and set to 100% FSH (80% + 2 dB).",
           "Record forward and backward probe positions where amplitude drops to <strong>10% FSH (-20 dB)</strong>."
         ],
-        headers: ["Target SDH", "Pos A Peak X", "Pos B (-20dB)", "Pos C (-20dB)", "Beam Width"],
+        headers: ["Target SDH", "Pos A Peak X", "Pos B (-20dB)", "Pos C (-20dB)", "Width"],
         rows: [
           ["SDH-1 (15mm)", "", "", "", ""],
           ["SDH-2 (25mm)", "", "", "", ""],
@@ -1684,13 +1735,13 @@
         ]
       },
       6: {
-        title: "Experiment 6: Construction of a DAC Curve (ASME Sec. V Art. 4)",
+        title: "EXP 06 — Construction of DAC Curve (ASME Sec. V Basic Block)",
         block: "asme", probe: "60", sub: "sdh", range: "125",
         steps: [
-          "On the <strong>ASME Basic Calibration Block</strong> (adjust Thickness T as required), peak <strong>1/4 T SDH</strong> and set to <strong>80% FSH</strong>.",
-          "Place Gate A over the echo and click <strong>Record Pt</strong>. Repeat at fixed gain for <strong>1/2 T</strong> and <strong>3/4 T SDHs</strong> to generate 100%, -6 dB, and -20 dB DAC curves."
+          "On the <strong>ASME Basic Calibration Block</strong>, peak <strong>1/4 T SDH</strong> and set to <strong>80% FSH</strong>.",
+          "Open <strong>3. GATE A & DAC CURVE</strong> and click <strong>REC PT</strong>. Repeat at fixed gain for <strong>1/2 T</strong> and <strong>3/4 T SDHs</strong>."
         ],
-        headers: ["ASME Reflector", "Sound Path S (mm)", "Peak (% FSH)", "-6 dB DAC", "-20 dB DAC"],
+        headers: ["ASME Reflector", "Path S (mm)", "Peak (% FSH)", "-6 dB DAC", "-20 dB DAC"],
         rows: [
           ["1/4 T SDH", "", "", "", ""],
           ["1/2 T SDH", "", "", "", ""],
@@ -1698,7 +1749,7 @@
         ]
       },
       7: {
-        title: "Experiment 7: Determination of Defect Length (6 dB & 20 dB Drop)",
+        title: "EXP 07 — Defect Length Sizing (6 dB & 20 dB Drop Methods)",
         block: "weld", probe: "60", sub: "weld_scan", range: "125",
         steps: [
           "Peak the weld flaw in X, then scan <strong>Lateral Z</strong> to find the <strong>50% (-6 dB)</strong> and <strong>10% (-20 dB)</strong> drop endpoints."
@@ -1710,36 +1761,36 @@
         ]
       },
       8: {
-        title: "Experiment 8: Determination of Defect Depth (1st & 2nd Leg)",
+        title: "EXP 08 — Defect Depth Measurement (1st & 2nd Leg)",
         block: "weld", probe: "60", sub: "weld_scan", range: "125",
         steps: [
-          "Measure Sound Path S on <strong>1st Leg</strong> (d = S cos θ) and <strong>2nd Leg</strong> (d = 2T - S cos θ) across variable plate thickness T."
+          "Measure Sound Path S on <strong>1st Leg</strong> (d = S cos θ) and <strong>2nd Leg</strong> (d = 2T - S cos θ) across plate thickness T."
         ],
-        headers: ["Leg", "Sound Path S (mm)", "Surface X (mm)", "Depth d (mm)"],
+        headers: ["Leg", "Path S (mm)", "Surface X (mm)", "Depth d (mm)"],
         rows: [
           ["1st Leg", "", "", ""],
           ["2nd Leg", "", "", ""]
         ]
       },
       9: {
-        title: "Experiment 9: Determination of Transfer Loss (V & W Skip Paths)",
+        title: "EXP 09 — Transfer Loss Determination (V & W Skip Paths)",
         block: "weld", probe: "60", sub: "transfer_c", range: "200",
         steps: [
           "Set V-path and W-path echoes to 80% FSH on <strong>Curve C (Cal Block)</strong>, then repeat on <strong>Curve D (Rough Piece)</strong> and calculate ΔG = D - C."
         ],
-        headers: ["Path", "Gain C (dB)", "Gain D (dB)", "Transfer Loss (dB)"],
+        headers: ["Path", "Gain C (dB)", "Gain D (dB)", "Transfer Loss"],
         rows: [
           ["V-Path (1 Skip)", "", "", ""],
           ["W-Path (2 Skips)", "", "", ""]
         ]
       },
       10: {
-        title: "Experiment 10: Determination of Flaw Height (20 dB Drop Method)",
+        title: "EXP 10 — Flaw Through-Wall Height (20 dB Drop Method)",
         block: "weld", probe: "60", sub: "weld_scan", range: "125",
         steps: [
           "Peak flaw at Pos B (100% FSH), then record forward (Pos C) and backward (Pos D) 10% FSH (-20 dB) sound paths."
         ],
-        headers: ["Position", "Probe X (mm)", "Sound Path S (mm)", "Depth Proj (mm)"],
+        headers: ["Position", "Probe X", "Path S (mm)", "Depth Proj"],
         rows: [
           ["Pos B (Peak)", "", "", ""],
           ["Pos C (Fwd 10%)", "", "", ""],
@@ -1747,12 +1798,12 @@
         ]
       },
       11: {
-        title: "Experiment 11: Ultrasonic Inspection of a Welded Sample",
+        title: "EXP 11 — Full Ultrasonic Inspection of Butt-Welded Sample",
         block: "weld", probe: "0", sub: "weld_scan", range: "125",
         steps: [
           "Scan parent plate with <strong>0° Normal</strong> probe, then switch to <strong>60°/70° Shear</strong> to log weld flaw BPL (S), Depth (d), Length, and DAC evaluation."
         ],
-        headers: ["Ind #", "Angle (°)", "BPL S (mm)", "Depth d (mm)", "Length (mm)", "Disposition"],
+        headers: ["Ind #", "Angle", "Path S", "Depth d", "Length", "Disposition"],
         rows: [
           ["1", "", "", "", "", ""],
           ["2", "", "", "", "", ""]
@@ -1783,10 +1834,10 @@
 
       document.getElementById("labInstructions").innerHTML = `<h3>${exp.title}</h3><ol>${exp.steps.map(s => `<li>${s}</li>`).join("")}</ol>`;
 
-      let html = `<table class="data-table"><thead><tr>${exp.headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>`;
+      let html = `<table class="ind-table"><thead><tr>${exp.headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>`;
       exp.rows.forEach((r, rIdx) => {
         html += `<tr>${r.map((cell, cIdx) => cIdx === 0
-          ? `<td style="font-weight:600;text-align:left;">${cell}</td>`
+          ? `<td style="font-weight:600;text-align:left;color:var(--text-primary);">${cell}</td>`
           : `<td><input type="text" data-r="${rIdx}" data-c="${cIdx}" value="${cell}" placeholder="---" /></td>`
         ).join("")}</tr>`;
       });
@@ -1796,7 +1847,7 @@
     }
 
     // =========================================================
-    // 9. UI SYNC, POINTER DRAGGING & RENDER LOOP
+    // 9. UI SYNC, TABBED DECK & RENDER LOOP
     // =========================================================
     function syncUI() {
       const px = parseFloat(sProbeX.value);
@@ -1806,7 +1857,7 @@
       const coupling = getCoupling(lift);
 
       document.getElementById("valProbeX").textContent = `${px.toFixed(1)} mm`;
-      document.getElementById("valProbeLift").textContent = lift <= 0.05 ? "0.0 mm (Coupled)" : `${lift.toFixed(1)} mm (Air Gap)`;
+      document.getElementById("valProbeLift").textContent = lift <= 0.05 ? "0.0 mm (COUPLED)" : `${lift.toFixed(1)} mm (AIR GAP)`;
       document.getElementById("valProbeZ").textContent = `${pz.toFixed(1)} mm`;
       document.getElementById("valThickT").textContent = `${T.toFixed(1)} mm`;
       document.getElementById("valVel").textContent = `${parseFloat(sVel.value).toFixed(0)} m/s`;
@@ -1814,13 +1865,13 @@
       document.getElementById("valGain").textContent = `${parseFloat(sGain.value).toFixed(1)} dB`;
       document.getElementById("valGateStart").textContent = `${parseFloat(sGateStart.value).toFixed(0)} mm`;
       document.getElementById("valGateWidth").textContent = `${parseFloat(sGateWidth.value).toFixed(0)} mm`;
-      document.getElementById("valGateThresh").textContent = `${parseFloat(sGateThresh.value).toFixed(0)}% FSH`;
+      document.getElementById("valGateThresh").textContent = `${parseFloat(sGateThresh.value).toFixed(0)}%`;
       document.getElementById("dacPointCount").textContent = `${dacPoints.length} pts recorded`;
 
       const cStat = document.getElementById("couplingStatus");
-      if (coupling > 0.8) { cStat.textContent = "Coupled (Oil Film OK)"; cStat.style.color = "#10b981"; }
-      else if (coupling > 0.05) { cStat.textContent = "Partial Coupling"; cStat.style.color = "#f59e0b"; }
-      else { cStat.textContent = "LIFT-OFF: No Coupling!"; cStat.style.color = "#ef4444"; }
+      if (coupling > 0.8) { cStat.textContent = "COUPLED [OK]"; cStat.style.color = "var(--phosphor-green)"; }
+      else if (coupling > 0.05) { cStat.textContent = "WEAK COUPLING"; cStat.style.color = "var(--dac-amber)"; }
+      else { cStat.textContent = "LIFT-OFF [NO SIGNAL]"; cStat.style.color = "var(--gate-red)"; }
 
       document.getElementById("btnRevealDefect").classList.toggle("hidden", currentBlock !== "weld");
       computePhysics();
@@ -1835,9 +1886,22 @@
 
     [sProbeX, sProbeLift, sProbeZ, sThickT, sVel, sDelay, sGain, sGateStart, sGateWidth, sGateThresh].forEach(el => el.addEventListener("input", syncUI));
 
-    document.querySelectorAll(".ws-tab").forEach(tab => {
+    // Control Deck Sub-Tab Switcher
+    document.querySelectorAll(".d-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".d-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const target = btn.dataset.deck;
+        ["probe", "cal", "gate"].forEach(id => {
+          document.getElementById(`deck-${id}`).classList.toggle("hidden", id !== target);
+        });
+      });
+    });
+
+    // Workspace Mode Switcher
+    document.querySelectorAll(".mode-btn").forEach(tab => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".ws-tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".mode-btn").forEach(t => t.classList.remove("active"));
         tab.classList.add("active");
         workspaceMode = tab.dataset.workspace;
         const isExp = workspaceMode === "experiment";
@@ -1870,16 +1934,16 @@
     document.getElementById("btnPlus6dB").addEventListener("click", () => nudge("gain", 6.0));
     document.getElementById("btnPeakHold").addEventListener("click", e => {
       showPeakEnvelope = !showPeakEnvelope; peakEnvelopeSignal.fill(0);
-      e.target.classList.toggle("active-toggle", showPeakEnvelope);
-      e.target.textContent = showPeakEnvelope ? "Peak Env: ON" : "Peak Env: OFF";
+      e.target.classList.toggle("active", showPeakEnvelope);
+      e.target.textContent = showPeakEnvelope ? "ENV: ON" : "ENV: OFF";
     });
     document.getElementById("btnFreeze").addEventListener("click", e => {
       isFrozen = !isFrozen; if (isFrozen) frozenSignal.set(liveSignal);
-      e.target.classList.toggle("active-toggle", isFrozen);
-      e.target.textContent = isFrozen ? "Frozen" : "Freeze";
+      e.target.classList.toggle("active", isFrozen);
+      e.target.textContent = isFrozen ? "FROZEN" : "FREEZE";
     });
     document.getElementById("btnRevealDefect").addEventListener("click", e => {
-      revealDefect = !revealDefect; e.target.textContent = revealDefect ? "Hide Flaw" : "Reveal Flaw";
+      revealDefect = !revealDefect; e.target.textContent = revealDefect ? "HIDE FLAW" : "SHOW FLAW";
     });
     document.getElementById("btnAutoRange").addEventListener("click", () => {
       sVel.value = getTrueVelocity(); sDelay.value = getTrueDelay().toFixed(2); syncUI();
@@ -1932,7 +1996,7 @@
     });
 
     document.getElementById("btnGradeLab").addEventListener("click", () => {
-      document.getElementById("labFeedback").innerHTML = `<span class="status-pass">Experiment ${activeExpId} Verified:</span> Readings conform to ISO 2400 / ISO 7963 / ASME Sec. V geometry tolerances.`;
+      document.getElementById("labFeedback").innerHTML = `<span style="color:var(--phosphor-green);font-weight:700;">VERIFIED [PASS]:</span> Experiment ${activeExpId} readings match ISO 2400 / ISO 7963 / ASME Sec. V geometry tolerances.`;
     });
 
     function onPointerMove(clientX, clientY) {
